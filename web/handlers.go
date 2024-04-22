@@ -506,6 +506,7 @@ func (rt *Web) debugPage() http.HandlerFunc {
 		for _, bucket := range []datastore.BucketType{
 			datastore.BucketTypeTests, datastore.BucketTypeSubtests,
 			datastore.BucketTypeAvatars, datastore.BucketTypeAttachments,
+			datastore.BucketTypeCheckers, datastore.BucketTypeCompiles,
 		} {
 			stats = append(stats, datastore.GetBucket(bucket).Statistics())
 		}
@@ -585,13 +586,13 @@ func (rt *Web) appropriateDescriptionVariant(r *http.Request, variants []*kilono
 			return v.Language, v.Format, v.Type
 		}
 	}
-	// Then search if anything matches the language
+	// Then search if anything matches the format
 	for _, v := range variants {
-		if v.Language == prefLang {
+		if v.Format == prefFormat {
 			return v.Language, v.Format, v.Type
 		}
 	}
-	// Then search if anything matches the format
+	// Then search if anything matches the language
 	for _, v := range variants {
 		if v.Language == prefLang {
 			return v.Language, v.Format, v.Type
@@ -1752,7 +1753,7 @@ func (rt *Web) runTempl(w io.Writer, r *http.Request, templ *template.Template, 
 				if err == nil {
 					list, err := rt.base.ProblemList(r.Context(), id)
 					if err != nil {
-						if !errors.Is(err, context.Canceled) {
+						if !errors.Is(err, context.Canceled) && !errors.Is(err, kilonova.ErrNotFound) {
 							zap.S().Warn(err)
 						}
 					} else {
